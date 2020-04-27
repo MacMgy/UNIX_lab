@@ -1,0 +1,20 @@
+.idea
+.vscode
+.DS_Store
+
+# build & ci artifacts
+temp
+dist
+bz_sensor.tar.bz2
+
+# test coverage
+coverage.out
+
+# generated files
+*_generated.go
+*_gen.go
+
+# windows resource files
+*.syso
+
+etc/deployment/.env
