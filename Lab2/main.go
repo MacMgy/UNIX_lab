@@ -6,42 +6,39 @@ import (
 	"time"
 )
 
-type Massage struct {
-	data      string
-	processed bool
-
+type SyncPack struct {
 	mux *sync.Cond
+	processed bool
 }
 
-func RunConsumer(wg *sync.WaitGroup, msg *Massage, ch chan int) {
+func RunConsumer(wg *sync.WaitGroup, sync *SyncPack, ch chan string) {
 	defer func() {
 		fmt.Println("*** Successfully completed")
 		wg.Done()
 	}()
 	for {
+		// Выполнение goroutine останавливается
+		// до поступления очередного сообщения
 		select {
-		case _, ok := <-ch:
+		case msg, ok := <-ch:
 			if ok {
-				msg.mux.L.Lock()
+				sync.mux.L.Lock()
 
-				fmt.Printf("Got massage:  %q\n", msg.data)
-				processMassage(msg)
+				fmt.Printf("Got massage:  %q\n", msg)
+				sync.processed = true
 
-				msg.mux.Signal()
-				msg.mux.L.Unlock()
+				// Сигнализируем ожидающей функции, что можно продолжать работу
+				sync.mux.Signal()
+				sync.mux.L.Unlock()
 			} else {
+				// Закрытие канала сообщений сигнализирует о завершении работы
 				return
 			}
 		}
 	}
 }
 
-func processMassage(msg *Massage) {
-	msg.data = ""
-	msg.processed = true
-}
-
-func RunProvider(wg *sync.WaitGroup, msg *Massage, ch chan int) {
+func RunProvider(wg *sync.WaitGroup, msg *SyncPack, ch chan string) {
 	defer func() {
 		close(ch)
 		wg.Done()
@@ -49,26 +46,22 @@ func RunProvider(wg *sync.WaitGroup, msg *Massage, ch chan int) {
 
 	massages := []string{"context", "go.uuid", "exist", "models", "service"}
 	for i := range massages {
-		// just sleep
 		time.Sleep(time.Second * 1)
 
 		msg.mux.L.Lock()
 		if !msg.processed {
+			// Если сообщение еще в процессе обработки,
+			// ожидаем сигнала о завершении
 			msg.mux.Wait()
 		}
 
-		prepareMassage(msg, massages[i])
-		fmt.Printf("Send massage: %q\n", msg.data)
+		msg.processed = false
+		fmt.Printf("Send massage: %q\n", massages[i])
 
 		msg.mux.L.Unlock()
-		ch <- 0
+		ch <- massages[i]
 	}
 	return
-}
-
-func prepareMassage(msg *Massage, data string) {
-	msg.data = data
-	msg.processed = false
 }
 
 func main() {
@@ -76,16 +69,18 @@ func main() {
 		mux sync.Mutex
 		wg  sync.WaitGroup
 	)
-	msg := Massage{
+	msg := SyncPack{
 		processed: true,
 		mux:       sync.NewCond(&mux),
 	}
 	wg.Add(2)
 
-	ch := make(chan int, 10)
+	// Буферизированный канал хранит поступающие значения в виде очереди
+	ch := make(chan string, 10)
 	go RunConsumer(&wg, &msg, ch)
 	go RunProvider(&wg, &msg, ch)
 
+	// Ожидаем завершения наших goroutine
 	wg.Wait()
 	return
 }
