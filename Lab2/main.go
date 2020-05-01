@@ -26,7 +26,7 @@ func RunConsumer(wg *sync.WaitGroup, sync *SyncPack, ch chan string) {
 			if ok {
 				sync.mux.L.Lock()
 
-				fmt.Printf("Got massage:  %q\n", msg)
+				fmt.Printf("Got message:  %q\n", msg)
 				sync.processed = true
 
 				// Сигнализируем ожидающей функции, что можно продолжать работу
@@ -46,8 +46,8 @@ func RunProvider(wg *sync.WaitGroup, msg *SyncPack, ch chan string) {
 		wg.Done()
 	}()
 
-	massages := []string{"context", "go.uuid", "exist", "models", "service"}
-	for i := range massages {
+	messages := []string{"context", "go.uuid", "exist", "models", "service"}
+	for i := range messages {
 		time.Sleep(time.Second * 1)
 
 		msg.mux.L.Lock()
@@ -58,10 +58,10 @@ func RunProvider(wg *sync.WaitGroup, msg *SyncPack, ch chan string) {
 		}
 
 		msg.processed = false
-		fmt.Printf("Send message: %q\n", massages[i])
+		fmt.Printf("Send message: %q\n", messages[i])
 
 		msg.mux.L.Unlock()
-		ch <- massages[i]
+		ch <- messages[i]
 	}
 	return
 }
