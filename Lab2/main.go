@@ -1,5 +1,7 @@
 package main
 
+// Output MonitorGo
+
 import (
 	"fmt"
 	"sync"
