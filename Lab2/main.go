@@ -58,7 +58,7 @@ func RunProvider(wg *sync.WaitGroup, msg *SyncPack, ch chan string) {
 		}
 
 		msg.processed = false
-		fmt.Printf("Send massage: %q\n", massages[i])
+		fmt.Printf("Send message: %q\n", massages[i])
 
 		msg.mux.L.Unlock()
 		ch <- massages[i]
